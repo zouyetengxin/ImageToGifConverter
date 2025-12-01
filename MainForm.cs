@@ -21,6 +21,7 @@ namespace ImageToGifConverter
         private bool showGridLines = true;
         private string? generatedGifPath;
         private int frameRate = 60; // 默认60fps
+        private ImageAtlasForm? atlasForm;
 
         public MainForm()
         {
@@ -36,7 +37,7 @@ namespace ImageToGifConverter
 
         private void SetupEventHandlers()
         {
-            btnUpload.Click += BtnUpload_Click;
+
             btnGenerateGif.Click += BtnGenerateGif_Click;
             txtRows.TextChanged += TxtRows_TextChanged;
             txtColumns.TextChanged += TxtColumns_TextChanged;
@@ -53,17 +54,7 @@ namespace ImageToGifConverter
             picGifPreview.MouseDown += PicGifPreview_MouseDown;
         }
 
-        private void BtnUpload_Click(object? sender, EventArgs e)
-        {
-            using OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "PNG 图片 (*.png)|*.png|所有文件 (*.*)|*.*";
-            openFileDialog.Title = "选择图片文件";
 
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                LoadImageFromFile(openFileDialog.FileName);
-            }
-        }
 
         private void PicImage_DragEnter(object? sender, DragEventArgs e)
         {
@@ -77,6 +68,27 @@ namespace ImageToGifConverter
                 }
             }
             e.Effect = DragDropEffects.None;
+        }
+
+        private void BtnOpenAtlas_Click(object? sender, EventArgs e)
+        {
+            if (atlasForm == null || atlasForm.IsDisposed)
+            {
+                atlasForm = new ImageAtlasForm();
+                atlasForm.FormClosing += (s, args) =>
+                {
+                    // 当图集窗口关闭时，如果生成了图集，加载到主窗口
+                    var generatedAtlas = atlasForm.GetGeneratedAtlas();
+                    if (generatedAtlas != null)
+                    {
+                        LoadImageFromBitmap(generatedAtlas);
+                    }
+                    atlasForm = null;
+                };
+            }
+            
+            atlasForm.Show();
+            atlasForm.BringToFront();
         }
 
         private void PicImage_DragDrop(object? sender, DragEventArgs e)
@@ -97,11 +109,23 @@ namespace ImageToGifConverter
             {
                 originalImage = new Bitmap(filePath);
                 UpdateDisplay();
-                txtImagePath.Text = filePath;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"加载图片失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadImageFromBitmap(Bitmap bitmap)
+        {
+            try
+            {
+                originalImage = new Bitmap(bitmap);
+                UpdateDisplay();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"加载图集失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -409,18 +433,15 @@ namespace ImageToGifConverter
             this.Size = new Size(1200, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             
-            // 顶部控制区域
-            btnUpload = new Button();
-            btnUpload.Text = "上传图片";
-            btnUpload.Location = new Point(20, 20);
-            btnUpload.Size = new Size(100, 30);
-            this.Controls.Add(btnUpload);
-            
-            txtImagePath = new TextBox();
-            txtImagePath.Location = new Point(130, 20);
-            txtImagePath.Size = new Size(300, 30);
-            txtImagePath.ReadOnly = true;
-            this.Controls.Add(txtImagePath);
+            // 顶部控制区域 - 第一个窗口：图集合成
+            Button btnOpenAtlas = new Button();
+            btnOpenAtlas.Text = "图集合成";
+            btnOpenAtlas.Location = new Point(20, 20);
+            btnOpenAtlas.Size = new Size(100, 30);
+            btnOpenAtlas.BackColor = Color.DeepSkyBlue;
+            btnOpenAtlas.ForeColor = Color.White;
+            btnOpenAtlas.Click += BtnOpenAtlas_Click;
+            this.Controls.Add(btnOpenAtlas);
             
             Label lblRows = new Label();
             lblRows.Text = "行数:";
@@ -520,8 +541,7 @@ namespace ImageToGifConverter
             this.ResumeLayout(false);
         }
 
-        private Button btnUpload = null!;
-        private TextBox txtImagePath = null!;
+
         private TextBox txtRows = null!;
         private TextBox txtColumns = null!;
         private TextBox txtFrameRate = null!;
