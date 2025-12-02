@@ -219,9 +219,9 @@ namespace ImageToGifConverter
 
             if (currentGifPath != null)
             {
-                collection.Dispose();
-                collection = new MagickImageCollection(currentGifPath);
-                foreach (var frame in collection)
+                // collection?.Dispose();
+                using var tempCollection = new MagickImageCollection(currentGifPath);
+                foreach (var frame in tempCollection)
                 {
                     // 将MagickImage转换为Bitmap
                     using var ms = new MemoryStream();
