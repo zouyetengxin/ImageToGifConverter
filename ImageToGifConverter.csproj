@@ -13,4 +13,8 @@
     <PackageReference Include="Magick.NET-Q8-x64" Version="13.8.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="MainForm_Old.cs" />
+  </ItemGroup>
+
 </Project>
